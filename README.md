@@ -1,77 +1,121 @@
-# CodeIgniter 4 Application Starter
+# SideQuest
 
-## What is CodeIgniter?
+SideQuest is a social networking application built with CodeIgniter 4. It includes account registration, a verified-user feed, post sharing, comments, reactions, profile customization, search, recommendations, and optional two-factor authentication.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Features
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- Account registration, login, logout, and password reset
+- Email verification gate before users can access the full app
+- Optional two-factor authentication with QR setup and recovery codes
+- Feed with post creation, editing, deletion, sharing, and infinite scrolling
+- Media uploads for posts, including images and videos
+- Post reactions, comment reactions, saved posts, hidden posts, and hidden comments
+- Public user profiles with follow and unfollow actions
+- Profile picture and cover photo uploads
+- Search and "People you may know" recommendations
+- PHPUnit test suite for app-level coverage
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Tech Stack
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+- PHP 8.2+
+- CodeIgniter 4.7
+- MySQL or MariaDB for the main application database
+- SQLite in-memory database for default automated tests
+- Composer for dependency management
+- `pragmarx/google2fa` for two-factor authentication
+- `endroid/qr-code` for QR code generation
 
-## Installation & updates
+## Requirements
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+Make sure your environment includes:
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+- PHP 8.2 or higher
+- Composer
+- MySQL or MariaDB
+- Apache, Nginx, or the built-in CodeIgniter development server
+- PHP extensions: `intl`, `mbstring`, `json`, `mysqlnd`, `curl`
 
-## Setup
+## Getting Started
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+1. Install PHP dependencies:
 
-## Important Change with index.php
+   ```bash
+   composer install
+   ```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+2. Create your environment file:
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+   ```bash
+   copy env .env
+   ```
 
-**Please** read the user guide for a better explanation of how CI4 works!
+3. Update `.env` with your local settings:
 
-## Repository Management
+   ```ini
+   app.baseURL = 'http://localhost:8080/'
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+   database.default.hostname = localhost
+   database.default.database = sidequest
+   database.default.username = root
+   database.default.password =
+   database.default.DBDriver = MySQLi
+   database.default.port = 3306
+   ```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+4. Create a database named `sidequest`.
 
-## Server Requirements
+5. Import the included database dump:
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+   - File: `app/Database/sidequest.sql`
+   - This is the quickest way to get the app running with the expected schema and sample data.
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+6. Make sure the web server points to the `public` directory, not the project root.
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+7. Start the app with either:
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+   ```bash
+   php spark serve
+   ```
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+   Or configure your local Apache/XAMPP virtual host to serve `public/`.
 
-## Image Preview Notes
+## Database Notes
 
-- The post gallery API remains the same: post cards still provide `data-post-gallery` on the gallery root and `data-post-gallery-open` on each preview trigger.
-- Feed previews now render inside fixed-ratio containers so portrait, landscape, square, and ultra-wide images keep a stable layout before and after load.
-- Feed preview images use `object-fit: cover` for visual consistency, while the full-screen viewer uses `object-fit: contain` to preserve the original composition.
-- The full-screen viewer now includes reserved loading states, a stable preview frame, swipe navigation on touch devices, and pinch-to-zoom support inside the main image stage.
-- Mobile controls in the gallery viewer are sized for touch interaction, and the viewport meta tag now includes `viewport-fit=cover` for safer edge-to-edge layouts on modern phones.
+- The repository includes incremental migrations in `app/Database/Migrations`.
+- The included SQL dump is the most complete bootstrap for local setup.
+- Uploaded media is stored under `public/storage/`, so that directory must be writable.
+
+## Auth Flow Notes
+
+- Newly registered users must verify their email before accessing the verified routes such as the feed.
+- In the current local setup, the verification page generates and previews a verification link instead of sending a real email.
+- Two-factor authentication can be enabled from the security settings page after login.
+
+## Testing
+
+Run the test suite with:
+
+```bash
+composer test
+```
+
+By default, PHPUnit uses the `tests` database group configured for SQLite in memory.
+
+## Useful Paths
+
+- Application code: `app/`
+- Public entry point: `public/index.php`
+- Route definitions: `app/Config/Routes.php`
+- Main SQL dump: `app/Database/sidequest.sql`
+- Tests: `tests/`
+
+## Media Support
+
+- Accepted image types: JPG, JPEG, PNG, GIF, WebP
+- Accepted video types: MP4, WebM, MOV
+- Feed previews use fixed-ratio containers to keep cards visually stable while media loads
+- The full-screen gallery viewer supports touch navigation and pinch-to-zoom behavior for images
+
+## License
+
+This project is distributed under the MIT license. See `LICENSE` for details.
