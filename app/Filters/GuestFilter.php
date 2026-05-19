@@ -11,7 +11,7 @@ class GuestFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         if (auth_check()) {
-            return redirect()->to(site_url('dashboard'));
+            return redirect()->to(site_url('feed'));
         }
 
         return null;

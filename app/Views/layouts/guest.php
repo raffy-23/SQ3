@@ -2,7 +2,7 @@
 <html lang="en" class="<?= ($appearance ?? 'system') === 'dark' ? 'dark' : '' ?>">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="<?= esc(csrf_hash()) ?>">
     <meta name="csrf-header" content="X-CSRF-TOKEN">
     <meta name="csrf-token-name" content="<?= esc(csrf_token()) ?>">
@@ -44,6 +44,22 @@
         <?= view('partials/flash', $pageData) ?>
         <?= view($contentView, $pageData) ?>
     </div>
-    <script src="<?= esc(base_url('js/sidequest.js')) ?>" defer></script>
+    <?php
+        $jsTagGuest = function (string $file): string {
+            $path = FCPATH . 'js/' . $file;
+            $url  = base_url('js/' . $file);
+            if (is_file($path)) { $url .= '?v=' . filemtime($path); }
+            return '<script src="' . esc($url) . '" defer></script>';
+        };
+        $guestScripts = [
+            'sidequest-core.js',
+            'sidequest-custom-ui.js',
+            'sidequest-2fa.js',
+            'sidequest.js',
+        ];
+    ?>
+    <?php foreach ($guestScripts as $gs): ?>
+    <?= $jsTagGuest($gs) ?>
+    <?php endforeach; ?>
 </body>
 </html>

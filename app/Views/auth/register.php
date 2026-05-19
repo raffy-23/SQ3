@@ -1,3 +1,135 @@
+<?php
+// Extract specific validation errors from session to show as toasts
+$_regErrors    = session('errors') ?? [];
+$_pwMinError   = null;
+$_pwMatchError = null;
+$_emailError   = null;
+$_usernameError = null;
+$_otherErrors  = [];
+$_regSuccess   = session('success');
+
+if (is_array($_regErrors)) {
+    foreach ($_regErrors as $_field => $_msg) {
+        $_msg = (string) $_msg;
+        if ($_field === 'password' && stripos($_msg, 'least') !== false) {
+            $_pwMinError = $_msg;
+        } elseif ($_field === 'password_confirmation' || stripos($_msg, 'match') !== false) {
+            $_pwMatchError = $_msg;
+        } elseif ($_field === 'email') {
+            $_emailError = $_msg;
+        } elseif ($_field === 'username') {
+            $_usernameError = $_msg;
+        } else {
+            $_otherErrors[] = $_msg;
+        }
+    }
+}
+?>
+
+<!-- ── Register Toast Container ─────────────────────────────────── -->
+<div id="reg-toast-stack" style="position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;width:100%;max-width:360px;pointer-events:none;"></div>
+
+<script>
+(function () {
+    var stack = document.getElementById('reg-toast-stack');
+
+    function showToast(message, type) {
+        var colours = {
+            error:   { bg:'#fee2e2', border:'#ef4444', text:'#991b1b', icon:'#dc2626', label:'Error' },
+            success: { bg:'#d1fae5', border:'#10b981', text:'#047857', icon:'#059669', label:'Success' },
+            warning: { bg:'#fef9c3', border:'#f59e0b', text:'#92400e', icon:'#d97706', label:'Warning' },
+        };
+        var c = colours[type] || colours.error;
+
+        var iconMap = {
+            error:   '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+            success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+            warning: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+        };
+
+        var toast = document.createElement('div');
+        toast.style.cssText = 'pointer-events:auto;display:flex;flex-direction:column;gap:.25rem;border-radius:.5rem;border:1px solid '+c.border+';background:'+c.bg+';padding:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.12);font-size:.875rem;transition:opacity .3s,transform .3s;';
+        toast.innerHTML =
+            '<div style="display:flex;align-items:center;gap:.5rem;">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+c.icon+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+iconMap[type]+'</svg>' +
+                '<span style="font-weight:600;color:'+c.text+';">'+c.label+'</span>' +
+            '</div>' +
+            '<div style="margin-left:1.5rem;color:'+c.text+';">'+message+'</div>';
+
+        stack.appendChild(toast);
+
+        setTimeout(function () {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-8px)';
+            setTimeout(function () { toast.remove(); }, 320);
+        }, 4000);
+    }
+
+    // ── Show server-side errors on page load ──
+    <?php if ($_pwMinError): ?>
+    showToast(<?= json_encode($_pwMinError) ?>, 'error');
+    <?php endif; ?>
+
+    <?php if ($_pwMatchError): ?>
+    showToast(<?= json_encode($_pwMatchError) ?>, 'error');
+    <?php endif; ?>
+
+    <?php if ($_emailError): ?>
+    showToast(<?= json_encode($_emailError) ?>, 'error');
+    <?php endif; ?>
+
+    <?php if ($_usernameError): ?>
+    showToast(<?= json_encode($_usernameError) ?>, 'error');
+    <?php endif; ?>
+
+    <?php foreach ($_otherErrors as $_oe): ?>
+    showToast(<?= json_encode($_oe) ?>, 'error');
+    <?php endforeach; ?>
+
+    <?php if ($_regSuccess): ?>
+    showToast(<?= json_encode((string) $_regSuccess) ?>, 'success');
+    <?php endif; ?>
+
+    // ── Client-side live validation ──
+    document.addEventListener('DOMContentLoaded', function () {
+        var pwField      = document.getElementById('password');
+        var pwConfField  = document.getElementById('password_confirmation');
+        var shownMinWarn = false;
+        var shownMatch   = false;
+
+        if (pwField) {
+            pwField.addEventListener('blur', function () {
+                if (pwField.value.length > 0 && pwField.value.length < 8) {
+                    if (!shownMinWarn) {
+                        shownMinWarn = true;
+                        showToast('Password must be at least 8 characters.', 'warning');
+                        setTimeout(function () { shownMinWarn = false; }, 4200);
+                    }
+                }
+            });
+        }
+
+        if (pwConfField) {
+            pwConfField.addEventListener('blur', function () {
+                if (pwConfField.value.length > 0 && pwField && pwField.value !== pwConfField.value) {
+                    if (!shownMatch) {
+                        shownMatch = true;
+                        showToast('Passwords do not match.', 'error');
+                        setTimeout(function () { shownMatch = false; }, 4200);
+                    }
+                }
+            });
+        }
+
+        // Success on redirect (only if page freshly loaded after register action)
+        <?php if ($_regSuccess): ?>
+        // Already shown above via PHP
+        <?php endif; ?>
+    });
+})();
+</script>
+
+
 <div class="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
     <div class="w-full max-w-sm">
         <div class="flex flex-col gap-8">
@@ -157,7 +289,7 @@
 
                 <div class="text-center text-sm text-muted-foreground">
                     Already have an account? 
-                    <a href="<?= esc(site_url('login')) ?>" tabindex="10" class="underline-offset-4 hover:underline text-foreground">
+                    <a href="<?= esc(site_url('login')) ?>" tabindex="10" class="sq-auth-switch-link underline-offset-4 text-foreground">
                         Log in
                     </a>
                 </div>

@@ -1,6 +1,6 @@
 <?php
 
-use App\Libraries\AuthService;
+use App\Services\AuthService;
 use CodeIgniter\I18n\Time;
 
 if (! function_exists('auth_service')) {

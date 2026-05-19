@@ -12,7 +12,10 @@ class ProfileCoverController extends BaseController
             'cover_photo' => 'uploaded[cover_photo]|max_size[cover_photo,10240]|is_image[cover_photo]|mime_in[cover_photo,image/jpg,image/jpeg,image/png,image/gif,image/webp]',
         ];
 
-        if (! $this->validateData([], $rules)) {
+        if (! $this->validate($rules)) {
+            if ($this->request->hasHeader('X-Requested-With')) {
+                return $this->response->setStatusCode(422)->setJSON(['errors' => $this->validator->getErrors()]);
+            }
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
@@ -34,6 +37,9 @@ class ProfileCoverController extends BaseController
             'cover_photo_path' => 'covers/' . $userId . '/' . $fileName,
         ]);
 
+        if ($this->request->hasHeader('X-Requested-With')) {
+            return $this->response->setJSON(['success' => true]);
+        }
         return redirect()->back()->with('success', 'Cover photo updated.');
     }
 

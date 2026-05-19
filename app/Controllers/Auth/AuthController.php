@@ -43,7 +43,7 @@ class AuthController extends BaseController
 
         $user = current_user();
 
-        return redirect()->to(site_url(($user['email_verified_at'] ?? null) ? 'dashboard' : 'email/verify'));
+        return redirect()->to(site_url(($user['email_verified_at'] ?? null) ? 'feed' : 'email/verify'));
     }
 
     public function showRegister()
@@ -66,7 +66,33 @@ class AuthController extends BaseController
             'password_confirmation' => 'required|matches[password]',
         ];
 
-        if (! $this->validateData($this->request->getPost(), $rules)) {
+        $messages = [
+            'first_name'  => ['required' => 'First name is required.'],
+            'last_name'   => ['required' => 'Last name is required.'],
+            'username'    => [
+                'required'      => 'Username is required.',
+                'min_length'    => 'Username must be at least 3 characters.',
+                'regex_match'   => 'Username may only contain letters, numbers, and underscores.',
+                'is_unique'     => 'That username is already taken. Please choose another.',
+            ],
+            'email' => [
+                'required'    => 'Email address is required.',
+                'valid_email' => 'Please enter a valid email address.',
+                'is_unique'   => 'That email address is already registered. Try logging in instead.',
+            ],
+            'date_of_birth'  => ['required' => 'Date of birth is required.', 'valid_date' => 'Please enter a valid date of birth.'],
+            'sex'            => ['required' => 'Please select your sex.'],
+            'password'       => [
+                'required'   => 'Password is required.',
+                'min_length' => 'Password must be at least 8 characters.',
+            ],
+            'password_confirmation' => [
+                'required' => 'Please confirm your password.',
+                'matches'  => 'Passwords do not match.',
+            ],
+        ];
+
+        if (! $this->validateData($this->request->getPost(), $rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 

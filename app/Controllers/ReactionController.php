@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\PostModel;
 use App\Models\ReactionModel;
 use App\Models\UserModel;
+use App\Services\NotificationService;
 
 class ReactionController extends BaseController
 {
@@ -67,6 +68,34 @@ class ReactionController extends BaseController
                 'user_id' => (int) $this->authUser['id'],
                 'type'    => $type,
             ]);
+
+            // Notify the post owner — only on a brand-new reaction
+            $post = model(PostModel::class)->find($postId);
+            if ($post) {
+                $actorName = trim((string) ($this->authUser['full_name'] ?? $this->authUser['username'] ?? 'Someone'));
+                $emoji     = match ($type) {
+                    'like'    => '👍',
+                    'love'    => '❤️',
+                    'haha'    => '😂',
+                    'wow'     => '😮',
+                    'sad'     => '😢',
+                    'angry'   => '😡',
+                    default   => '👍',
+                };
+                NotificationService::notify(
+                    (int) $post['user_id'],
+                    (int) $this->authUser['id'],
+                    'PostReactionNotification',
+                    [
+                        'sender_id'        => (int) $this->authUser['id'],
+                        'message'          => "{$actorName} reacted {$emoji} to your post.",
+                        'actor_name'       => $actorName,
+                        'actor_username'   => $this->authUser['username'] ?? '',
+                        'post_id'          => $postId,
+                        'reaction_type'    => $type,
+                    ]
+                );
+            }
         }
 
         $post = model(PostModel::class)->hydratedPost($postId, (int) $this->authUser['id']);
@@ -81,19 +110,5 @@ class ReactionController extends BaseController
         }
 
         return redirect()->back();
-    }
-
-    private function wantsJson(): bool
-    {
-        return $this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json');
-    }
-
-    private function jsonOrRedirectError(array $errors)
-    {
-        if ($this->wantsJson()) {
-            return $this->response->setStatusCode(422)->setJSON(['errors' => $errors]);
-        }
-
-        return redirect()->back()->withInput()->with('errors', $errors);
     }
 }

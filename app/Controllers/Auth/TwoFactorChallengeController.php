@@ -50,7 +50,7 @@ class TwoFactorChallengeController extends BaseController
             auth_service()->loginPendingTwoFactor();
             $user = current_user();
 
-            return redirect()->to(site_url(($user['email_verified_at'] ?? null) ? 'dashboard' : 'email/verify'));
+            return redirect()->to(site_url(($user['email_verified_at'] ?? null) ? 'feed' : 'email/verify'));
         }
 
         $rules = ['code' => 'required|exact_length[6]|numeric'];

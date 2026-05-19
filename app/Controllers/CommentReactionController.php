@@ -70,17 +70,5 @@ class CommentReactionController extends BaseController
         return redirect()->back();
     }
 
-    private function wantsJson(): bool
-    {
-        return $this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json');
-    }
 
-    private function jsonOrRedirectError(array $errors)
-    {
-        if ($this->wantsJson()) {
-            return $this->response->setStatusCode(422)->setJSON(['errors' => $errors]);
-        }
-
-        return redirect()->back()->withInput()->with('errors', $errors);
-    }
 }

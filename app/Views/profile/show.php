@@ -54,15 +54,15 @@ $feedEndMessage = $activeTab === 'saved' ? 'No more saved posts to show.' : 'No 
                             <span>Edit</span>
                         </a>
                     <?php else: ?>
-                        <form method="post" action="<?= esc(site_url('users/' . (int) $profileUser['id'] . '/follow')) ?>">
+                        <form method="post" action="<?= esc(site_url('users/' . (int) $profileUser['id'] . '/follow')) ?>" data-follow-form data-user-id="<?= esc((string) (int) $profileUser['id']) ?>">
                             <?= csrf_field() ?>
                             <?php if (! empty($isFollowing)): ?>
                                 <input type="hidden" name="_method" value="DELETE">
-                                <button type="submit" class="sq-btn sq-btn-secondary">
+                                <button type="submit" class="sq-btn sq-btn-secondary" data-follow-btn data-following="true">
                                     Unfollow
                                 </button>
                             <?php else: ?>
-                                <button type="submit" class="sq-btn sq-btn-primary">
+                                <button type="submit" class="sq-btn sq-btn-primary" data-follow-btn data-following="false">
                                     Follow
                                 </button>
                             <?php endif; ?>
@@ -89,11 +89,11 @@ $feedEndMessage = $activeTab === 'saved' ? 'No more saved posts to show.' : 'No 
                 </div>
                 <div class="sq-profile-stat-card">
                     <p class="sq-profile-stat-label">Followers</p>
-                    <p class="sq-profile-stat-value"><?= esc((string) ($profileUser['followers_count'] ?? 0)) ?></p>
+                    <p class="sq-profile-stat-value" data-stat-followers><?= esc((string) ($profileUser['followers_count'] ?? 0)) ?></p>
                 </div>
                 <div class="sq-profile-stat-card">
                     <p class="sq-profile-stat-label">Following</p>
-                    <p class="sq-profile-stat-value"><?= esc((string) ($profileUser['following_count'] ?? 0)) ?></p>
+                    <p class="sq-profile-stat-value" data-stat-following><?= esc((string) ($profileUser['following_count'] ?? 0)) ?></p>
                 </div>
             </div>
         </div>
@@ -127,12 +127,12 @@ $feedEndMessage = $activeTab === 'saved' ? 'No more saved posts to show.' : 'No 
 
         <div class="sq-profile-feed-status" data-feed-sentinel>
             <?php if (! empty($nextPageUrl)): ?>
-                <div class="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    Scroll to load more posts...
+                <div class="sq-feed-status-loading">
+                    <div class="sq-feed-spinner"></div>
+                    <span>Scroll to load more…</span>
                 </div>
             <?php else: ?>
-                <p class="text-sm text-muted-foreground"><?= esc($feedEndMessage) ?></p>
+                <p class="sq-muted"><?= esc($feedEndMessage) ?></p>
             <?php endif; ?>
         </div>
     </section>

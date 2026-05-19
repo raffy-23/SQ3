@@ -9,7 +9,7 @@ class ConfirmPasswordController extends BaseController
     public function show()
     {
         return $this->render('auth/confirm-password', [
-            'redirectTo' => (string) ($this->request->getGet('redirect') ?: site_url('dashboard')),
+            'redirectTo' => (string) ($this->request->getGet('redirect') ?: site_url('feed')),
             'pageTitle'  => 'Confirm password',
         ], 'guest');
     }
@@ -25,7 +25,7 @@ class ConfirmPasswordController extends BaseController
             return redirect()->back()->withInput()->with('error', 'The password you entered was incorrect.');
         }
 
-        return redirect()->to((string) ($this->request->getPost('redirect') ?: site_url('dashboard')))
+        return redirect()->to((string) ($this->request->getPost('redirect') ?: site_url('feed')))
             ->with('success', 'Password confirmed.');
     }
 }

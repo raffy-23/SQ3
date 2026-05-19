@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\CommentModel;
 use App\Models\PostModel;
+use App\Services\NotificationService;
 
 class CommentController extends BaseController
 {
@@ -54,6 +55,63 @@ class CommentController extends BaseController
             'full_name'           => $this->authUser['full_name'],
             'profile_picture_url' => $this->authUser['profile_picture_url'],
         ] : null;
+
+        // ── Notifications ──────────────────────────────────────────────────────
+        $actorName = trim((string) ($this->authUser['full_name'] ?? $this->authUser['username'] ?? 'Someone'));
+        $post      = model(PostModel::class)->find($postId);
+
+        if ($post) {
+            if ($parentId === null) {
+                // Top-level comment → notify the post author
+                NotificationService::notify(
+                    (int) $post['user_id'],
+                    (int) $this->authUser['id'],
+                    'PostCommentNotification',
+                    [
+                        'message'        => "{$actorName} commented on your post.",
+                        'actor_name'     => $actorName,
+                        'actor_username' => $this->authUser['username'] ?? '',
+                        'post_id'        => $postId,
+                        'comment_id'     => $commentId,
+                    ]
+                );
+            } else {
+                // Reply → notify the parent comment author (may differ from post author)
+                $parentRow = $commentModel->find($parentId);
+                if ($parentRow) {
+                    NotificationService::notify(
+                        (int) $parentRow['user_id'],
+                        (int) $this->authUser['id'],
+                        'CommentReplyNotification',
+                        [
+                            'message'        => "{$actorName} replied to your comment.",
+                            'actor_name'     => $actorName,
+                            'actor_username' => $this->authUser['username'] ?? '',
+                            'post_id'        => $postId,
+                            'comment_id'     => $commentId,
+                        ]
+                    );
+                }
+
+                // Also notify post author if they're different from the parent comment author
+                $parentAuthorId = $parentRow ? (int) $parentRow['user_id'] : 0;
+                if ((int) $post['user_id'] !== $parentAuthorId) {
+                    NotificationService::notify(
+                        (int) $post['user_id'],
+                        (int) $this->authUser['id'],
+                        'PostCommentNotification',
+                        [
+                            'message'        => "{$actorName} also replied on your post.",
+                            'actor_name'     => $actorName,
+                            'actor_username' => $this->authUser['username'] ?? '',
+                            'post_id'        => $postId,
+                            'comment_id'     => $commentId,
+                        ]
+                    );
+                }
+            }
+        }
+        // ───────────────────────────────────────────────────────────────────────
 
         if ($this->wantsJson()) {
             $commentData = [
@@ -173,19 +231,5 @@ class CommentController extends BaseController
         }
 
         return redirect()->back()->with('success', 'Comment deleted.');
-    }
-
-    private function wantsJson(): bool
-    {
-        return $this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json');
-    }
-
-    private function jsonOrRedirectError(array $errors)
-    {
-        if ($this->wantsJson()) {
-            return $this->response->setStatusCode(422)->setJSON(['errors' => $errors]);
-        }
-
-        return redirect()->back()->withInput()->with('errors', $errors);
     }
 }

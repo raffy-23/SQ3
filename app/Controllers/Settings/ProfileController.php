@@ -19,7 +19,7 @@ class ProfileController extends BaseController
             'mustVerifyEmail' => true,
             'status'          => session()->getFlashdata('status'),
             'pageTitle'       => 'Settings',
-            'topbarLabel'     => 'Manage your profile and account settings',
+            'topbarLabel'     => 'Manage your account settings',
         ]);
     }
 

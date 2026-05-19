@@ -24,7 +24,7 @@ class SecurityController extends BaseController
                 'recovery_codes' => is_array($setupRecoveryCodes) ? $setupRecoveryCodes : [],
             ] : null,
             'pageTitle'              => 'Settings',
-            'topbarLabel'            => 'Manage your profile and account settings',
+            'topbarLabel'            => 'Manage your account settings',
         ]);
     }
 

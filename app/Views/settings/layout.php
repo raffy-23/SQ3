@@ -1,12 +1,44 @@
-<div class="sq-settings-layout" style="display: flex; gap: 3rem; max-width: 64rem; margin: 0 auto; align-items: flex-start; padding: 1rem 0;">
-    <aside class="sq-settings-nav" style="width: 14rem; flex-shrink: 0; position: sticky; top: 5rem; align-self: flex-start;">
-        <nav style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <a href="<?= esc(site_url('settings/profile')) ?>" class="sq-nav-link <?= $currentPath === 'settings/profile' || $currentPath === 'settings' ? 'is-active' : '' ?>" style="border-radius: 0.5rem; padding: 0.6rem 1rem; font-size: .875rem;">Profile</a>
-            <a href="<?= esc(site_url('settings/security')) ?>" class="sq-nav-link <?= $currentPath === 'settings/security' ? 'is-active' : '' ?>" style="border-radius: 0.5rem; padding: 0.6rem 1rem; font-size: .875rem;">Security</a>
-            <a href="<?= esc(site_url('settings/appearance')) ?>" class="sq-nav-link <?= $currentPath === 'settings/appearance' ? 'is-active' : '' ?>" style="border-radius: 0.5rem; padding: 0.6rem 1rem; font-size: .875rem;">Appearance</a>
+<?php
+$tabs = [
+    ['label' => 'Profile',    'url' => site_url('settings/profile'),    'active' => ($currentPath === 'settings/profile' || $currentPath === 'settings')],
+    ['label' => 'Security',   'url' => site_url('settings/security'),   'active' => ($currentPath === 'settings/security')],
+    ['label' => 'Appearance', 'url' => site_url('settings/appearance'), 'active' => ($currentPath === 'settings/appearance')],
+];
+?>
+
+<!-- ── Mobile tab bar (hidden on desktop via CSS) ──────────────────────── -->
+<div class="sq-settings-tabbar">
+    <?php foreach ($tabs as $tab): ?>
+        <a
+            href="<?= esc($tab['url']) ?>"
+            class="sq-settings-tab<?= $tab['active'] ? ' is-active' : '' ?>"
+            <?= $tab['active'] ? 'aria-current="page"' : '' ?>
+        >
+            <?= esc($tab['label']) ?>
+        </a>
+    <?php endforeach; ?>
+</div>
+
+<!-- ── Main layout ────────────────────────────────────────────────────── -->
+<div class="sq-settings-layout">
+
+    <!-- Sidebar nav (desktop only) -->
+    <aside class="sq-settings-sidebar">
+        <nav class="sq-settings-sidebar-nav">
+            <?php foreach ($tabs as $tab): ?>
+                <a
+                    href="<?= esc($tab['url']) ?>"
+                    class="sq-nav-link<?= $tab['active'] ? ' is-active' : '' ?>"
+                >
+                    <?= esc($tab['label']) ?>
+                </a>
+            <?php endforeach; ?>
         </nav>
     </aside>
-    <div class="sq-settings-content" style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; max-width: 48rem;">
+
+    <!-- Page content -->
+    <div class="sq-settings-content">
         <?= view($settingsView, $pageData) ?>
     </div>
+
 </div>

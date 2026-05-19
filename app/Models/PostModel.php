@@ -13,7 +13,7 @@ class PostModel extends Model
     protected $useAutoIncrement = true;
     protected $useTimestamps    = true;
     protected $dateFormat       = 'datetime';
-    protected $allowedFields    = ['user_id', 'content', 'photo_path', 'media_type'];
+    protected $allowedFields    = ['user_id', 'content', 'photo_path', 'photo_paths', 'media_type', 'media_types', 'shared_post_id'];
 
     /**
      * @return array{data:list<array<string,mixed>>,next_cursor:?string,per_page:int}
@@ -71,10 +71,6 @@ class PostModel extends Model
      */
     public function savedPage(int $ownerId, int $viewerId, ?string $cursor = null, int $perPage = 15): array
     {
-        if (! $this->db->tableExists('saved_posts')) {
-            return ['data' => [], 'next_cursor' => null, 'per_page' => $perPage];
-        }
-
         $builder = $this->builder();
         $builder
             ->select('posts.*, saved_posts.id AS saved_cursor, saved_posts.created_at AS saved_at')
@@ -110,7 +106,7 @@ class PostModel extends Model
      */
     public function hiddenCommentsForPost(int $postId, int $viewerId): array
     {
-        if ($postId < 1 || $viewerId < 1 || ! $this->db->tableExists('hidden_comments')) {
+        if ($postId < 1 || $viewerId < 1) {
             return [];
         }
 
@@ -121,7 +117,7 @@ class PostModel extends Model
 
         $commentModel         = model(CommentModel::class);
         $userModel            = model(UserModel::class);
-        $commentReactionModel = $this->db->tableExists('comment_reactions') ? model(CommentReactionModel::class) : null;
+        $commentReactionModel = model(CommentReactionModel::class);
 
         $commentRows = $commentModel
             ->where('post_id', $postId)
@@ -264,8 +260,8 @@ class PostModel extends Model
         $userModel            = model(UserModel::class);
         $reactionModel        = model(ReactionModel::class);
         $commentModel         = model(CommentModel::class);
-        $savedPostModel       = $this->db->tableExists('saved_posts') ? model(SavedPostModel::class) : null;
-        $commentReactionModel = $this->db->tableExists('comment_reactions') ? model(CommentReactionModel::class) : null;
+        $savedPostModel       = model(SavedPostModel::class);
+        $commentReactionModel = model(CommentReactionModel::class);
 
         $postIds = array_map(static fn (array $post): int => (int) $post['id'], $posts);
         $userIds = array_values(array_unique(array_map(static fn (array $post): int => (int) $post['user_id'], $posts)));
@@ -293,7 +289,7 @@ class PostModel extends Model
             ->orderBy('id', 'ASC')
             ->findAll();
 
-        if ($viewerId > 0 && $commentRows !== [] && $this->db->tableExists('hidden_comments')) {
+        if ($viewerId > 0 && $commentRows !== []) {
             $hiddenCommentIds = array_fill_keys(model(HiddenCommentModel::class)->hiddenCommentIds($viewerId), true);
             if ($hiddenCommentIds !== []) {
                 $commentRows = array_values(array_filter(
@@ -411,6 +407,60 @@ class PostModel extends Model
         }
 
 
+        // ── Shares count ────────────────────────────────────────────────────────
+        $sharesCounts = [];
+        if ($postIds !== []) {
+            $sharesRows = $this->db->query(
+                'SELECT shared_post_id, COUNT(*) AS cnt FROM posts WHERE shared_post_id IN (' . implode(',', $postIds) . ') GROUP BY shared_post_id'
+            )->getResultArray();
+            foreach ($sharesRows as $row) {
+                $sharesCounts[(int) $row['shared_post_id']] = (int) $row['cnt'];
+            }
+        }
+
+        // ── Original posts (for shares) ─────────────────────────────────────────
+        $sharedPostIds = array_values(array_unique(array_filter(
+            array_map(fn ($p) => (int) ($p['shared_post_id'] ?? 0), $posts),
+            fn ($id) => $id > 0
+        )));
+
+        $originalPostsMap = [];
+        if ($sharedPostIds !== []) {
+            $origRows = $this->whereIn('id', $sharedPostIds)->findAll();
+            // Collect any extra author ids not already in $authors
+            $extraUserIds = array_diff(
+                array_unique(array_map(fn ($r) => (int) $r['user_id'], $origRows)),
+                array_keys($authors)
+            );
+            if ($extraUserIds !== []) {
+                $extraAuthors = model(UserModel::class)->whereIn('id', $extraUserIds)->findAll();
+                foreach ($extraAuthors as $u) {
+                    $authors[(int) $u['id']] = [
+                        'id'                  => (int) $u['id'],
+                        'username'            => $u['username'],
+                        'full_name'           => trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')),
+                        'profile_picture_url' => $this->profilePictureUrl($u['profile_picture_path'] ?? null),
+                    ];
+                }
+            }
+
+            foreach ($origRows as $orig) {
+                $origPaths = $this->parseMediaPaths($orig);
+                $origUrls  = $this->mediaUrls($origPaths);
+                $origTypes = $this->parseMediaTypes($orig, count($origPaths));
+                $origAuthor = $authors[(int) $orig['user_id']] ?? null;
+                $originalPostsMap[(int) $orig['id']] = [
+                    'id'          => (int) $orig['id'],
+                    'content'     => $orig['content'],
+                    'media_urls'  => $origUrls,
+                    'media_types' => $origTypes,
+                    'media_type'  => $orig['media_type'] ?? null,
+                    'author'      => $origAuthor,
+                    'created_at_human' => $this->humanize($orig['created_at'] ?? null),
+                ];
+            }
+        }
+
         $hydrated = [];
         foreach ($posts as $post) {
             $postId    = (int) $post['id'];
@@ -428,19 +478,37 @@ class PostModel extends Model
                 }
             }
 
-            $mediaPath = $post['photo_path'] ?? null;
-            $mediaType = $post['media_type'] ?? ($mediaPath ? 'image' : null);
-            $isOwner   = (int) $post['user_id'] === $viewerId;
-            $isSaved   = isset($savedLookup[$postId]);
+            $mediaPath    = $post['photo_path'] ?? null;
+            $mediaType    = $post['media_type'] ?? ($mediaPath ? 'image' : null);
+            $mediaPaths   = $this->parseMediaPaths($post);
+            $mediaUrls    = $this->mediaUrls($mediaPaths);
+            $perFileTypes = $this->parseMediaTypes($post, count($mediaPaths));
+            $galleryItems = array_map(
+                fn ($url, $type) => ['url' => $url, 'type' => $type ?? 'image'],
+                $mediaUrls,
+                $perFileTypes
+            );
+            $isOwner    = (int) $post['user_id'] === $viewerId;
+            $isSaved    = isset($savedLookup[$postId]);
+
+            $sharesCount = $sharesCounts[$postId] ?? 0;
+            $sharedPostId = (int) ($post['shared_post_id'] ?? 0);
 
             $hydrated[] = [
                 'id'                    => $postId,
                 'content'               => $post['content'],
                 'photo_path'            => $mediaPath,
-                'photo_url'             => $this->mediaUrl($mediaPath),
+                'photo_url'             => $mediaUrls !== [] ? $mediaUrls[0] : $this->mediaUrl($mediaPath),
+                'photo_paths'           => $mediaPaths,
+                'photo_urls'            => $mediaUrls,
                 'media_path'            => $mediaPath,
-                'media_url'             => $this->mediaUrl($mediaPath),
+                'media_url'             => $mediaUrls !== [] ? $mediaUrls[0] : $this->mediaUrl($mediaPath),
+                'media_urls'            => $mediaUrls,
                 'media_type'            => $mediaType,
+                'media_types'           => $perFileTypes,
+                'gallery_items'         => $galleryItems,
+                'shared_post_id'        => $sharedPostId ?: null,
+                'shared_post'           => $sharedPostId ? ($originalPostsMap[$sharedPostId] ?? null) : null,
                 'author'                => $author ? [
                     'id'                  => (int) $author['id'],
                     'username'            => $author['username'],
@@ -453,6 +521,7 @@ class PostModel extends Model
                 'reactions_breakdown'   => $breakdown,
                 'current_user_reaction' => $current,
                 'comments_count'        => (int) ($commentCountsByPost[$postId] ?? 0),
+                'shares_count'          => $sharesCount,
                 'comments'              => $comments,
                 'is_owner'              => $isOwner,
                 'is_saved'              => $isSaved,
@@ -468,7 +537,7 @@ class PostModel extends Model
 
     private function applyHiddenFilter(object $builder, int $viewerId): void
     {
-        if ($viewerId < 1 || ! $this->db->tableExists('hidden_posts')) {
+        if ($viewerId < 1) {
             return;
         }
 
@@ -476,6 +545,41 @@ class PostModel extends Model
         if ($hiddenIds !== []) {
             $builder->whereNotIn('posts.id', $hiddenIds);
         }
+    }
+
+    private function parseMediaPaths(array $post): array
+    {
+        if (! empty($post['photo_paths'])) {
+            $decoded = json_decode($post['photo_paths'], true);
+            if (is_array($decoded) && $decoded !== []) {
+                return $decoded;
+            }
+        }
+
+        $single = $post['photo_path'] ?? null;
+        return $single !== null && $single !== '' ? [$single] : [];
+    }
+
+    private function parseMediaTypes(array $post, int $fileCount): array
+    {
+        if (! empty($post['media_types'])) {
+            $decoded = json_decode($post['media_types'], true);
+            if (is_array($decoded) && $decoded !== []) {
+                return $decoded;
+            }
+        }
+
+        // Fall back to repeating the single media_type for every file
+        $type = $post['media_type'] ?? 'image';
+        return $fileCount > 0 ? array_fill(0, $fileCount, $type) : [];
+    }
+
+    private function mediaUrls(array $paths): array
+    {
+        return array_values(array_filter(array_map(
+            fn (?string $path): ?string => $this->mediaUrl($path),
+            $paths,
+        )));
     }
 
     private function mediaUrl(?string $path): ?string

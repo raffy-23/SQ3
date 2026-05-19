@@ -55,13 +55,13 @@
                     <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-4 mt-4">
                         <strong class="block mb-2 text-sm font-medium">Reset link preview</strong>
                         <p class="text-xs text-muted-foreground mb-2">Mail delivery is not wired yet, so use this link directly in your local environment.</p>
-                        <a href="<?= esc((string) session('resetLink')) ?>" class="text-xs text-primary underline break-all"><?= esc((string) session('resetLink')) ?></a>
+                        <a href="<?= esc((string) session('resetLink')) ?>" class="sq-reset-link text-xs text-primary underline"><?= esc((string) session('resetLink')) ?></a>
                     </div>
                 <?php endif; ?>
 
                 <div class="space-x-1 text-center text-sm text-muted-foreground">
                     <span>Or, return to</span>
-                    <a href="<?= esc(site_url('login')) ?>" class="underline-offset-4 hover:underline text-foreground">
+                    <a href="<?= esc(site_url('login')) ?>" class="sq-auth-switch-link underline-offset-4 text-foreground">
                         log in
                     </a>
                 </div>

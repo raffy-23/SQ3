@@ -145,7 +145,7 @@ class UserModel extends Model
             'posts_count'     => $this->db->table('posts')->where('user_id', $userId)->countAllResults(),
             'followers_count' => $this->db->table('follows')->where('following_id', $userId)->countAllResults(),
             'following_count' => $this->db->table('follows')->where('follower_id', $userId)->countAllResults(),
-            'saved_count'     => $this->db->tableExists('saved_posts') ? model(SavedPostModel::class)->countForUser($userId) : 0,
+            'saved_count'     => model(SavedPostModel::class)->countForUser($userId),
         ];
     }
 
@@ -172,14 +172,16 @@ class UserModel extends Model
 
     public function applySearch(object $builder, string $term): object
     {
-        $escaped = '%' . str_replace(['%', '_'], ['\\%', '\\_'], trim($term)) . '%';
+        $term = trim($term);
 
+        // Let CI4's like() handle quoting, escaping, and % wildcard placement.
+        // Default side='both' produces: column LIKE '%term%'
         return $builder
             ->groupStart()
-            ->like('username', $escaped, 'both', false)
-            ->orLike('first_name', $escaped, 'both', false)
-            ->orLike('last_name', $escaped, 'both', false)
-            ->orLike('email', $escaped, 'both', false)
+            ->like('username',     $term)
+            ->orLike('first_name', $term)
+            ->orLike('last_name',  $term)
+            ->orLike('email',      $term)
             ->groupEnd();
     }
 }

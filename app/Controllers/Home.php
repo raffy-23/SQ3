@@ -7,7 +7,7 @@ class Home extends BaseController
     public function index()
     {
         if (auth_check()) {
-            return redirect()->to(site_url('dashboard'));
+            return redirect()->to(site_url('feed'));
         }
 
         return $this->render('home', [

@@ -12,7 +12,10 @@ class ProfilePictureController extends BaseController
             'profile_picture' => 'uploaded[profile_picture]|max_size[profile_picture,10240]|is_image[profile_picture]|mime_in[profile_picture,image/jpg,image/jpeg,image/png,image/gif,image/webp]',
         ];
 
-        if (! $this->validateData([], $rules)) {
+        if (! $this->validate($rules)) {
+            if ($this->request->hasHeader('X-Requested-With')) {
+                return $this->response->setStatusCode(422)->setJSON(['errors' => $this->validator->getErrors()]);
+            }
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
@@ -34,6 +37,9 @@ class ProfilePictureController extends BaseController
             'profile_picture_path' => 'avatars/' . $userId . '/' . $fileName,
         ]);
 
+        if ($this->request->hasHeader('X-Requested-With')) {
+            return $this->response->setJSON(['success' => true]);
+        }
         return redirect()->back()->with('success', 'Profile picture updated.');
     }
 

@@ -2,7 +2,7 @@
 
 namespace Config;
 
-use App\Libraries\AuthService;
+use App\Services\AuthService;
 use App\Models\UserModel;
 use CodeIgniter\Config\BaseService;
 

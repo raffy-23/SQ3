@@ -1,3 +1,70 @@
+<?php
+$_loginError   = session('error');
+$_loginStatus  = session('status');
+$_loginSuccess = session('success');
+$_loginErrors  = session('errors') ?? [];
+?>
+
+<!-- ── Login Toast Container ─────────────────────────────────────── -->
+<div id="login-toast-stack" style="position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;width:100%;max-width:360px;pointer-events:none;"></div>
+
+<script>
+(function () {
+    var stack = document.getElementById('login-toast-stack');
+
+    function showToast(message, type) {
+        var colours = {
+            error:   { bg:'#fee2e2', border:'#ef4444', text:'#991b1b', icon:'#dc2626', label:'Error' },
+            success: { bg:'#d1fae5', border:'#10b981', text:'#047857', icon:'#059669', label:'Success' },
+            info:    { bg:'#dbeafe', border:'#3b82f6', text:'#1e40af', icon:'#2563eb', label:'Info' },
+            warning: { bg:'#fef9c3', border:'#f59e0b', text:'#92400e', icon:'#d97706', label:'Warning' },
+        };
+        var c = colours[type] || colours.error;
+        var iconMap = {
+            error:   '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+            success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+            info:    '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+            warning: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+        };
+
+        var toast = document.createElement('div');
+        toast.style.cssText = 'pointer-events:auto;display:flex;flex-direction:column;gap:.25rem;border-radius:.5rem;border:1px solid '+c.border+';background:'+c.bg+';padding:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.12);font-size:.875rem;transition:opacity .3s,transform .3s;';
+        toast.innerHTML =
+            '<div style="display:flex;align-items:center;gap:.5rem;">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+c.icon+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+iconMap[type]+'</svg>' +
+                '<span style="font-weight:600;color:'+c.text+';">'+c.label+'</span>' +
+            '</div>' +
+            '<div style="margin-left:1.5rem;color:'+c.text+';">'+message+'</div>';
+
+        stack.appendChild(toast);
+        setTimeout(function () {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-8px)';
+            setTimeout(function () { toast.remove(); }, 320);
+        }, 4000);
+    }
+
+    // ── Server-side flash messages ──
+    <?php if ($_loginError): ?>
+    showToast(<?= json_encode((string) $_loginError) ?>, 'error');
+    <?php endif; ?>
+
+    <?php if ($_loginSuccess): ?>
+    showToast(<?= json_encode((string) $_loginSuccess) ?>, 'success');
+    <?php endif; ?>
+
+    <?php if ($_loginStatus && $_loginStatus !== 'verification-link-sent'): ?>
+    showToast(<?= json_encode((string) $_loginStatus) ?>, 'info');
+    <?php endif; ?>
+
+    <?php if (is_array($_loginErrors)): ?>
+    <?php foreach ($_loginErrors as $_msg): ?>
+    showToast(<?= json_encode((string) $_msg) ?>, 'error');
+    <?php endforeach; ?>
+    <?php endif; ?>
+})();
+</script>
+
 <div class="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
     <div class="w-full max-w-sm">
         <div class="flex flex-col gap-8">
@@ -88,7 +155,7 @@
                 <?php if (! empty($canRegister)): ?>
                     <div class="text-center text-sm text-muted-foreground">
                         Don't have an account? 
-                        <a href="<?= esc(site_url('register')) ?>" tabindex="5" class="underline-offset-4 hover:underline text-foreground">
+                        <a href="<?= esc(site_url('register')) ?>" tabindex="5" class="sq-auth-switch-link underline-offset-4 text-foreground">
                             Sign up
                         </a>
                     </div>

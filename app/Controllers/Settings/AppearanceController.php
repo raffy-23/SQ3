@@ -11,7 +11,7 @@ class AppearanceController extends BaseController
         return $this->render('settings/layout', [
             'settingsView' => 'settings/appearance',
             'pageTitle'    => 'Settings',
-            'topbarLabel'  => 'Manage your profile and account settings',
+            'topbarLabel'  => 'Manage your account settings',
         ]);
     }
 }

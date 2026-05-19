@@ -68,11 +68,34 @@ CREATE TABLE `cache_locks` (
 CREATE TABLE `comments` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `post_id` bigint(20) UNSIGNED NOT NULL,
+  `parent_id` bigint(20) UNSIGNED DEFAULT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `content` varchar(1000) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `comment_reactions`
+--
+
+CREATE TABLE `comment_reactions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `comment_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `type` varchar(20) NOT NULL DEFAULT 'like',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `comment_reactions`
+--
+
+INSERT INTO `comment_reactions` (`id`, `comment_id`, `user_id`, `type`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 'like', '2026-05-06 13:42:21', '2026-05-06 13:42:21');
 
 -- --------------------------------------------------------
 
@@ -111,6 +134,34 @@ CREATE TABLE `follows` (
 INSERT INTO `follows` (`id`, `follower_id`, `following_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 2, '2026-05-01 18:14:37', '2026-05-01 18:14:37'),
 (2, 2, 1, '2026-05-01 18:16:12', '2026-05-01 18:16:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hidden_comments`
+--
+
+CREATE TABLE `hidden_comments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `comment_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hidden_posts`
+--
+
+CREATE TABLE `hidden_posts` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `post_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -182,7 +233,14 @@ INSERT INTO `migrations` (`id`, `migration`, `version`, `class`, `group`, `names
 (11, '2026_04_30_234136_create_reactions_table', '2026_04_30_234136', 'create_reactions_table', 'default', 'App', 0, 5),
 (12, '2026_04_30_234149_create_notifications_table', '2026_04_30_234149', 'create_notifications_table', 'default', 'App', 0, 5),
 (13, '2026-05-06-000001_AddPhotoPathToPosts', '2026-05-06-000001', 'App\\Database\\Migrations\\AddPhotoPathToPosts', 'default', 'App', 0, 6),
-(14, '2026-05-06-000002_AddMediaTypeToPosts', '2026-05-06-000002', 'App\\Database\\Migrations\\AddMediaTypeToPosts', 'default', 'App', 0, 7);
+(14, '2026-05-06-000002_AddMediaTypeToPosts', '2026-05-06-000002', 'App\\Database\\Migrations\\AddMediaTypeToPosts', 'default', 'App', 0, 7),
+(15, '2026-05-06-000003_AddCoverPhotoPathToUsers', '2026-05-06-000003', 'App\\Database\\Migrations\\AddCoverPhotoPathToUsers', 'default', 'App', 0, 8),
+(16, '2026-05-06-000004_CreateSavedPostsTable', '2026-05-06-000004', 'App\\Database\\Migrations\\CreateSavedPostsTable', 'default', 'App', 0, 9),
+(17, '2026-05-06-000005_CreateHiddenPostsTable', '2026-05-06-000005', 'App\\Database\\Migrations\\CreateHiddenPostsTable', 'default', 'App', 0, 9),
+(18, '2026-05-06-000006_AddParentIdToComments', '2026-05-06-000006', 'App\\Database\\Migrations\\AddParentIdToComments', 'default', 'App', 0, 10),
+(19, '2026-05-06-000007_CreateCommentReactionsTable', '2026-05-06-000007', 'App\\Database\\Migrations\\CreateCommentReactionsTable', 'default', 'App', 0, 10),
+(20, '2026-05-06-000008_AddTypeToCommentReactions', '2026-05-06-000008', 'App\\Database\\Migrations\\AddTypeToCommentReactions', 'default', 'App', 0, 11),
+(21, '2026-05-06-000009_CreateHiddenCommentsTable', '2026-05-06-000009', 'App\\Database\\Migrations\\CreateHiddenCommentsTable', 'default', 'App', 0, 12);
 
 -- --------------------------------------------------------
 
@@ -269,6 +327,20 @@ INSERT INTO `reactions` (`id`, `post_id`, `user_id`, `type`, `created_at`, `upda
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `saved_posts`
+--
+
+CREATE TABLE `saved_posts` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `post_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sessions`
 --
 
@@ -308,6 +380,7 @@ CREATE TABLE `users` (
   `two_factor_recovery_codes` text DEFAULT NULL,
   `two_factor_confirmed_at` timestamp NULL DEFAULT NULL,
   `profile_picture_path` varchar(255) DEFAULT NULL,
+  `cover_photo_path` varchar(255) DEFAULT NULL,
   `bio` text DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -427,6 +500,39 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `users_email_unique` (`email`);
 
 --
+-- Indexes for table `comment_reactions`
+--
+ALTER TABLE `comment_reactions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `comment_id_user_id` (`comment_id`,`user_id`),
+  ADD KEY `comment_id` (`comment_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `hidden_comments`
+--
+ALTER TABLE `hidden_comments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id_comment_id` (`user_id`,`comment_id`),
+  ADD KEY `comment_id` (`comment_id`);
+
+--
+-- Indexes for table `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id_post_id` (`user_id`,`post_id`),
+  ADD KEY `post_id` (`post_id`);
+
+--
+-- Indexes for table `saved_posts`
+--
+ALTER TABLE `saved_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id_post_id` (`user_id`,`post_id`),
+  ADD KEY `post_id` (`post_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -458,25 +564,49 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `posts`
 --
 ALTER TABLE `posts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `reactions`
 --
 ALTER TABLE `reactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `comment_reactions`
+--
+ALTER TABLE `comment_reactions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+
+--
+-- AUTO_INCREMENT for table `hidden_comments`
+--
+ALTER TABLE `hidden_comments`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `saved_posts`
+--
+ALTER TABLE `saved_posts`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Constraints for dumped tables
@@ -508,6 +638,27 @@ ALTER TABLE `posts`
 ALTER TABLE `reactions`
   ADD CONSTRAINT `reactions_post_id_foreign` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `reactions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `hidden_comments`
+--
+ALTER TABLE `hidden_comments`
+  ADD CONSTRAINT `hidden_comments_comment_id_foreign` FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `hidden_comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  ADD CONSTRAINT `hidden_posts_post_id_foreign` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `hidden_posts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `saved_posts`
+--
+ALTER TABLE `saved_posts`
+  ADD CONSTRAINT `saved_posts_post_id_foreign` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `saved_posts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

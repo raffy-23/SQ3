@@ -34,4 +34,18 @@ abstract class BaseController extends Controller
             'pageData'    => $pageData,
         ]));
     }
+
+    protected function wantsJson(): bool
+    {
+        return $this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json');
+    }
+
+    protected function jsonOrRedirectError(array $errors)
+    {
+        if ($this->wantsJson()) {
+            return $this->response->setStatusCode(422)->setJSON(['errors' => $errors]);
+        }
+
+        return redirect()->back()->withInput()->with('errors', $errors);
+    }
 }

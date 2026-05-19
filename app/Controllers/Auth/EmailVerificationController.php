@@ -10,7 +10,7 @@ class EmailVerificationController extends BaseController
     public function notice()
     {
         if (($this->authUser['email_verified_at'] ?? null) !== null) {
-            return redirect()->to(site_url('dashboard'));
+            return redirect()->to(site_url('feed'));
         }
 
         return $this->render('auth/verify-email', [
@@ -23,7 +23,7 @@ class EmailVerificationController extends BaseController
     public function send()
     {
         if (($this->authUser['email_verified_at'] ?? null) !== null) {
-            return redirect()->to(site_url('dashboard'));
+            return redirect()->to(site_url('feed'));
         }
 
         $verificationLink = site_url('email/verify/' . $this->authUser['id'] . '/' . sha1((string) $this->authUser['email']));

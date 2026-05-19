@@ -67,3 +67,11 @@ Additionally, make sure that the following extensions are enabled in your PHP:
 - json (enabled by default - don't turn it off)
 - [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
 - [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+
+## Image Preview Notes
+
+- The post gallery API remains the same: post cards still provide `data-post-gallery` on the gallery root and `data-post-gallery-open` on each preview trigger.
+- Feed previews now render inside fixed-ratio containers so portrait, landscape, square, and ultra-wide images keep a stable layout before and after load.
+- Feed preview images use `object-fit: cover` for visual consistency, while the full-screen viewer uses `object-fit: contain` to preserve the original composition.
+- The full-screen viewer now includes reserved loading states, a stable preview frame, swipe navigation on touch devices, and pinch-to-zoom support inside the main image stage.
+- Mobile controls in the gallery viewer are sized for touch interaction, and the viewport meta tag now includes `viewport-fit=cover` for safer edge-to-edge layouts on modern phones.

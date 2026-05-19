@@ -3,8 +3,8 @@ $currentPath = $currentPath ?? '';
 $navItems    = [
     [
         'label'  => 'Feed',
-        'href'   => site_url('dashboard'),
-        'active' => $currentPath === 'dashboard',
+        'href'   => site_url('feed'),
+        'active' => $currentPath === 'feed' || $currentPath === 'dashboard',
         'icon'   => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>'
     ],
     [
@@ -24,14 +24,37 @@ if (! empty($authUser['username'])) {
 }
 $bridgeCssPath = FCPATH . 'css/sidequest-bridge.css';
 $bridgeCssUrl  = base_url('css/sidequest-bridge.css') . '?v=' . (is_file($bridgeCssPath) ? filemtime($bridgeCssPath) : time());
-$sidequestJsPath = FCPATH . 'js/sidequest.js';
-$sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPath) ? filemtime($sidequestJsPath) : time());
+
+$jsModules = [
+    'sidequest-core.js',
+    'sidequest-sidebar.js',
+    'sidequest-feed.js',
+    'sidequest-reactions.js',
+    'sidequest-ajaxforms.js',
+    'sidequest-posts.js',
+    'sidequest-composer.js',
+    'sidequest-widgets.js',
+    'sidequest-follow.js',
+    'sidequest-search.js',
+    'sidequest-custom-ui.js',
+    'sidequest-2fa.js',
+    'sidequest.js',
+];
+
+$jsTag = function (string $file): string {
+    $path = FCPATH . 'js/' . $file;
+    $url  = base_url('js/' . $file);
+    if (is_file($path)) {
+        $url .= '?v=' . filemtime($path);
+    }
+    return '<script src="' . esc($url) . '" defer></script>';
+};
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?= ($appearance ?? 'system') === 'dark' ? 'dark' : '' ?>">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="<?= esc(csrf_hash()) ?>">
     <meta name="csrf-header" content="X-CSRF-TOKEN">
     <meta name="csrf-token-name" content="<?= esc(csrf_token()) ?>">
@@ -76,7 +99,7 @@ $sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPa
     <div class="sq-app-shell">
         <aside class="sq-sidebar">
             <div class="sq-sidebar-main">
-                <a href="<?= esc(site_url('dashboard')) ?>" class="sq-brand sq-sidebar-brand" title="<?= esc($appName ?? 'SideQuest') ?>" aria-label="<?= esc($appName ?? 'SideQuest') ?>">
+                <a href="<?= esc(site_url('feed')) ?>" class="sq-brand sq-sidebar-brand" title="<?= esc($appName ?? 'SideQuest') ?>" aria-label="<?= esc($appName ?? 'SideQuest') ?>">
                     <?= view('partials/logo_mark', ['class' => 'sq-brand-mark']) ?>
                     <div class="sq-sidebar-brand-copy">
                         <div class="sq-brand-title"><?= esc($appName ?? 'SideQuest') ?></div>
@@ -100,9 +123,9 @@ $sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPa
 
                         <div class="sq-sidebar-user-summary">
                             <?php if (! empty($authUser['profile_picture_url'])): ?>
-                                <img src="<?= esc($authUser['profile_picture_url']) ?>" alt="<?= esc($authUser['full_name']) ?>" class="sq-avatar sq-avatar-sm">
+                                <img src="<?= esc($authUser['profile_picture_url']) ?>" alt="<?= esc($authUser['full_name']) ?>" class="sq-avatar sq-avatar-sm" data-self-avatar>
                             <?php else: ?>
-                                <span class="sq-avatar sq-avatar-sm sq-avatar-fallback" style="font-size: 0.8rem;"><?= esc(user_initials($authUser)) ?></span>
+                                <span class="sq-avatar sq-avatar-sm sq-avatar-fallback" style="font-size: 0.8rem;" data-self-avatar><?= esc(user_initials($authUser)) ?></span>
                             <?php endif; ?>
                             <div class="sq-sidebar-user-meta">
                                 <span class="sq-sidebar-user-name"><?= esc($authUser['full_name']) ?></span>
@@ -286,6 +309,21 @@ $sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPa
         </main>
     </div>
 
+    <!-- Confirm delete dialog -->
+    <dialog class="sq-dialog sq-confirm-dialog" id="sq-confirm-dialog" aria-labelledby="sq-confirm-title" aria-modal="true">
+        <div class="sq-dialog-card sq-confirm-card">
+            <div class="sq-confirm-icon-wrap" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </div>
+            <h2 class="sq-confirm-title" id="sq-confirm-title">Delete?</h2>
+            <p class="sq-confirm-body" id="sq-confirm-body">This action cannot be undone.</p>
+            <div class="sq-confirm-actions">
+                <button type="button" class="sq-btn sq-btn-ghost sq-confirm-cancel" id="sq-confirm-cancel">Cancel</button>
+                <button type="button" class="sq-btn sq-btn-danger sq-confirm-ok" id="sq-confirm-ok">Delete</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog class="sq-dialog" id="reactors-dialog">
         <div class="sq-dialog-card">
             <div class="sq-dialog-header">
@@ -345,17 +383,14 @@ $sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPa
                     ><?= esc(old('content') ?? '') ?></textarea>
 
                     <div class="sq-composer-preview" data-composer-preview hidden>
-                        <div class="sq-composer-preview-media">
-                            <img src="" alt="Selected media preview" class="sq-composer-preview-image" data-composer-preview-image hidden>
-                            <video class="sq-composer-preview-video" controls preload="metadata" data-composer-preview-video hidden></video>
-                        </div>
+                        <div class="sq-composer-preview-media" data-composer-preview-media></div>
                         <div class="sq-composer-preview-footer">
                             <p class="sq-composer-file-meta" data-composer-file-meta>No media selected</p>
-                            <button type="button" class="sq-composer-remove-media" data-composer-remove-media>Remove media</button>
+                            <button type="button" class="sq-composer-remove-media" data-composer-remove-media>Remove all</button>
                         </div>
                     </div>
 
-                    <input id="post-media" type="file" name="media" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="sq-composer-file-input" data-composer-media>
+                    <input id="post-media" type="file" name="media[]" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" multiple class="sq-composer-file-input" data-composer-media>
 
                     <div class="sq-composer-dialog-actions">
                         <button type="button" class="sq-composer-add-media" data-media-trigger="all">
@@ -375,7 +410,9 @@ $sidequestJsUrl  = base_url('js/sidequest.js') . '?v=' . (is_file($sidequestJsPa
         </div>
     </dialog>
 
-    <script src="<?= esc($sidequestJsUrl) ?>" defer></script>
+    <?php foreach ($jsModules as $module): ?>
+    <?= $jsTag($module) ?>
+    <?php endforeach; ?>
 
 </body>
 </html>

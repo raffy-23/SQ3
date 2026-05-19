@@ -21,7 +21,7 @@
     border-radius: 50%;
 }
 #profile-crop-dialog .cropper-view-box {
-    box-shadow: 0 0 0 1px #39f;
+    box-shadow: 0 0 0 1.5px var(--sq-primary);
     outline: 0;
 }
 /* Hide resize handles — fixed circle, not resizable */
@@ -30,10 +30,19 @@
 #profile-crop-dialog .cropper-line {
     display: none;
 }
+/* ── Replace checkerboard with solid theme background ── */
+#profile-crop-dialog .cropper-bg {
+    background-image: none !important;
+}
+#profile-crop-dialog .cropper-canvas,
+#profile-crop-dialog .cropper-drag-box,
+#profile-crop-dialog .cropper-wrap-box {
+    background: var(--sq-card-strong);
+}
 /* Zoom slider */
 #profile-crop-zoom {
     width: 8rem;
-    accent-color: var(--sq-accent, #6366f1);
+    accent-color: var(--sq-primary);
     cursor: pointer;
 }
 .sq-cropper-controls {
@@ -43,6 +52,7 @@
     gap: 1rem;
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--sq-border);
+    background: var(--sq-card-strong);
 }
 .sq-cropper-zoom-group {
     display: flex;
@@ -64,17 +74,21 @@
 .sq-icon-btn:hover {
     background: var(--sq-hover, rgba(0,0,0,0.06));
 }
+#profile-crop-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+}
 </style>
 
-<dialog id="profile-crop-dialog" style="padding: 0; width: 100%; max-width: 520px; border-radius: 0.75rem; border: 1px solid var(--sq-border); background: var(--sq-card); box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+<dialog id="profile-crop-dialog" style="padding: 0; width: min(360px, calc(100vw - 2rem)); border-radius: 0.75rem; border: 1px solid var(--sq-border); background: var(--sq-card-strong); box-shadow: 0 20px 60px rgba(0,0,0,0.45); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; color: var(--sq-text);">
 
     <!-- Header -->
-    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--sq-border);">
-        <h2 style="font-size: 1rem; font-weight: 600; margin: 0;">Crop profile picture</h2>
+    <div style="padding: 0.6rem 1rem; border-bottom: 1px solid var(--sq-border); background: var(--sq-card-strong);">
+        <h2 style="font-size: 0.85rem; font-weight: 600; margin: 0;">Crop profile picture</h2>
     </div>
 
     <!-- Crop area — dark background, fixed height (mirrors the h-80 div in React) -->
-    <div style="position: relative; height: 320px; width: 100%; background: rgba(0,0,0,0.9); overflow: hidden;">
+    <div style="position: relative; height: 220px; width: 100%; background: rgba(0,0,0,0.9); overflow: hidden;">
         <img id="profile-crop-image" style="display: block; max-width: 100%;" src="" alt="">
     </div>
 
@@ -100,9 +114,9 @@
     </div>
 
     <!-- Footer -->
-    <div style="padding: 0.75rem 1.25rem; border-top: 1px solid var(--sq-border); display: flex; justify-content: flex-end; gap: 0.75rem;">
-        <button type="button" class="sq-btn sq-btn-secondary" id="profile-crop-cancel">Cancel</button>
-        <button type="button" class="sq-btn sq-btn-primary"   id="profile-crop-save">Save</button>
+    <div style="padding: 0.5rem 1rem; border-top: 1px solid var(--sq-border); display: flex; justify-content: flex-end; gap: 0.5rem; background: var(--sq-card-strong);">
+        <button type="button" class="sq-btn sq-btn-secondary" id="profile-crop-cancel" style="font-size:.8rem;padding:.35rem .85rem;">Cancel</button>
+        <button type="button" id="profile-crop-save" style="font-size:.8rem;padding:.35rem .85rem;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--sq-primary);background:var(--sq-primary);color:var(--sq-card-strong);font-weight:600;cursor:pointer;transition:opacity .15s;">Save</button>
     </div>
 
 </dialog>
@@ -219,6 +233,46 @@
                 btnSave.textContent = 'Save';
             });
         }, 'image/jpeg', 0.92);
+    });
+}());
+</script>
+
+<!-- ── Cover photo: pick → instant upload ──────────────────────────── -->
+<script>
+(function () {
+    'use strict';
+    var coverInput = document.getElementById('sq-pme-cover-input');
+    var coverForm  = document.getElementById('sq-pme-cover-form');
+    var coverField = document.getElementById('sq-pme-cover-file-field');
+
+    if (!coverInput || !coverForm || !coverField) return;
+
+    coverInput.addEventListener('change', function () {
+        var file = coverInput.files && coverInput.files[0];
+        if (!file) return;
+
+        // Preview immediately
+        var preview = document.getElementById('sq-pme-cover-preview');
+        if (preview) {
+            var url = URL.createObjectURL(file);
+            if (preview.tagName === 'IMG') {
+                preview.src = url;
+            } else {
+                // Replace div with img
+                var img = document.createElement('img');
+                img.src = url;
+                img.alt = '';
+                img.className = 'sq-pme-cover-img';
+                img.id = 'sq-pme-cover-preview';
+                preview.replaceWith(img);
+            }
+        }
+
+        // Transfer file to hidden form field and submit
+        var dt = new DataTransfer();
+        dt.items.add(file);
+        coverField.files = dt.files;
+        coverForm.submit();
     });
 }());
 </script>

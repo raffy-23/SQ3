@@ -11,7 +11,7 @@ class FollowController extends BaseController
     public function store(int $userId)
     {
         if ($userId === (int) $this->authUser['id']) {
-            return $this->responseForFollow(false, 'You cannot follow yourself.');
+            return $this->responseForFollow(false, 'You cannot follow yourself.', $userId, false);
         }
 
         $followModel = model(FollowModel::class);
@@ -41,7 +41,7 @@ class FollowController extends BaseController
             ]);
         }
 
-        return $this->responseForFollow(true, 'Followed user.');
+        return $this->responseForFollow(true, 'Followed user.', $userId, true);
     }
 
     public function destroy(int $userId)
@@ -51,13 +51,29 @@ class FollowController extends BaseController
             ->where('following_id', $userId)
             ->delete();
 
-        return $this->responseForFollow(true, 'Unfollowed user.');
+        return $this->responseForFollow(true, 'Unfollowed user.', $userId, false);
     }
 
-    private function responseForFollow(bool $success, string $message)
+    private function responseForFollow(bool $success, string $message, int $userId = 0, bool $isFollowing = false)
     {
         if ($this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json')) {
-            return $this->response->setJSON(['success' => $success, 'message' => $message]);
+            $payload = ['success' => $success, 'message' => $message];
+
+            if ($success && $userId > 0) {
+                $userModel = model(UserModel::class);
+                $targetUser = $userModel->find($userId);
+                $followModel = model(FollowModel::class);
+
+                $followersCount = $followModel->where('following_id', $userId)->countAllResults(false);
+                $followingCount = $followModel->where('follower_id', $userId)->countAllResults(false);
+
+                $payload['is_following']    = $isFollowing;
+                $payload['user_id']         = $userId;
+                $payload['followers_count'] = $followersCount;
+                $payload['following_count'] = $followingCount;
+            }
+
+            return $this->response->setJSON($payload);
         }
 
         return redirect()->back()->with($success ? 'success' : 'error', $message);

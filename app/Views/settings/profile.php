@@ -1,71 +1,81 @@
     <section class="sq-post-card-v2 sq-profile-media-card">
-        <div style="padding: 1.25rem; font-size: .875rem;">
-            <div class="sq-card-title" style="font-size: .875rem;">Profile media</div>
-            <p class="text-sm text-muted-foreground">Manage the avatar and cover photo people see first on your profile.</p>
+        <div class="sq-pme-wrap">
 
-            <div class="sq-profile-media-preview">
-                <div class="sq-profile-media-cover<?= empty($authUser['cover_photo_url']) ? ' is-fallback' : '' ?>">
-                    <?php if (! empty($authUser['cover_photo_url'])): ?>
-                        <img
-                            src="<?= esc($authUser['cover_photo_url']) ?>"
-                            alt="<?= esc($authUser['full_name']) ?> cover photo"
-                            class="sq-profile-media-cover-image"
-                        >
-                    <?php else: ?>
-                        <div class="sq-profile-media-cover-fallback" aria-hidden="true"></div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="sq-profile-media-avatar">
-                    <?php if (! empty($authUser['profile_picture_url'])): ?>
-                        <img src="<?= esc($authUser['profile_picture_url']) ?>" alt="<?= esc($authUser['full_name']) ?>" class="sq-profile-media-avatar-image">
-                    <?php else: ?>
-                        <span class="sq-profile-media-avatar-fallback"><?= esc(user_initials($authUser)) ?></span>
-                    <?php endif; ?>
-                </div>
-
-                <div class="sq-profile-media-preview-copy">
-                    <div class="sq-profile-media-name"><?= esc($authUser['full_name']) ?></div>
-                    <div class="sq-profile-media-handle">@<?= esc($authUser['username']) ?></div>
-                </div>
-            </div>
-
-        <div class="sq-profile-media-grid">
-            <div class="sq-profile-media-panel">
-                <div>
-                    <label for="profile_picture" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Profile picture</label>
-                    <input id="profile_picture" type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-                    <p class="text-sm text-muted-foreground sq-profile-media-hint">Select an image to crop and upload.</p>
-                </div>
-                <?php if (! empty($authUser['profile_picture_url'])): ?>
-                    <form method="post" action="<?= esc(site_url('profile-picture')) ?>" class="sq-profile-inline-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="_method" value="DELETE">
-                        <button type="submit" class="sq-inline-button">Remove current photo</button>
-                    </form>
-                <?php endif; ?>
-            </div>
-
-            <div class="sq-profile-media-panel">
-                <form method="post" action="<?= esc(site_url('cover-photo')) ?>" enctype="multipart/form-data" class="sq-profile-upload-form">
-                    <?= csrf_field() ?>
-                    <div>
-                        <label for="cover_photo" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Cover photo</label>
-                        <input id="cover_photo" type="file" name="cover_photo" accept="image/jpeg,image/png,image/gif,image/webp" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required>
-                        <p class="text-sm text-muted-foreground sq-profile-media-hint">Use a wide image for the best fit on your public header.</p>
-                    </div>
-                    <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">Upload cover photo</button>
-                </form>
+            <!-- ══ Cover photo ══════════════════════════════════════════════ -->
+            <div class="sq-pme-cover-zone" id="sq-pme-cover-zone">
                 <?php if (! empty($authUser['cover_photo_url'])): ?>
-                    <form method="post" action="<?= esc(site_url('cover-photo')) ?>" class="sq-profile-inline-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="_method" value="DELETE">
-                        <button type="submit" class="sq-inline-button">Remove cover photo</button>
-                    </form>
+                    <img src="<?= esc($authUser['cover_photo_url']) ?>" alt="" class="sq-pme-cover-img" id="sq-pme-cover-preview">
+                <?php else: ?>
+                    <div class="sq-pme-cover-empty" id="sq-pme-cover-preview"></div>
                 <?php endif; ?>
+
+                <!-- Hover overlay -->
+                <div class="sq-pme-cover-overlay" aria-hidden="true">
+                    <div class="sq-pme-overlay-pill">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                        <span>Edit cover</span>
+                    </div>
+                </div>
+
+                <!-- Invisible file trigger for cover -->
+                <input type="file" id="sq-pme-cover-input" accept="image/jpeg,image/png,image/webp,image/gif" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;">
+            </div>
+
+            <!-- ══ Avatar ════════════════════════════════════════════════════ -->
+            <div class="sq-pme-avatar-zone" id="sq-pme-avatar-zone">
+                <div class="sq-pme-avatar-ring">
+                    <?php if (! empty($authUser['profile_picture_url'])): ?>
+                        <img src="<?= esc($authUser['profile_picture_url']) ?>" alt="" class="sq-pme-avatar-img" id="sq-pme-avatar-preview">
+                    <?php else: ?>
+                        <span class="sq-pme-avatar-fb" id="sq-pme-avatar-preview"><?= esc(user_initials($authUser)) ?></span>
+                    <?php endif; ?>
+
+                    <!-- Camera button -->
+                    <button type="button" class="sq-pme-avatar-cam" id="sq-pme-avatar-btn" aria-label="Change profile picture">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                    </button>
+
+                    <!-- Invisible file trigger for avatar -->
+                    <input type="file" id="profile_picture" accept="image/jpeg,image/png,image/webp,image/gif" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;" aria-hidden="true">
+                </div>
+            </div>
+
+            <!-- ══ Name / handle row ═════════════════════════════════════════ -->
+            <div class="sq-pme-identity">
+                <div class="sq-pme-name"><?= esc($authUser['full_name']) ?></div>
+                <div class="sq-pme-handle">@<?= esc($authUser['username']) ?></div>
+
+                <!-- Remove actions -->
+                <div class="sq-pme-remove-row">
+                    <?php if (! empty($authUser['profile_picture_url'])): ?>
+                        <form method="post" action="<?= esc(site_url('profile-picture')) ?>" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="_method" value="DELETE">
+                            <button type="submit" class="sq-pme-remove-btn">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                Remove photo
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if (! empty($authUser['cover_photo_url'])): ?>
+                        <form method="post" action="<?= esc(site_url('cover-photo')) ?>" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="_method" value="DELETE">
+                            <button type="submit" class="sq-pme-remove-btn">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                Remove cover
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
-        </div>
+
+        <!-- Cover upload form (hidden, submitted via JS) -->
+        <form id="sq-pme-cover-form" method="post" action="<?= esc(site_url('cover-photo')) ?>" enctype="multipart/form-data" style="display:none;">
+            <?= csrf_field() ?>
+            <input type="file" name="cover_photo" id="sq-pme-cover-file-field">
+        </form>
     </section>
 
     <section class="sq-post-card-v2">
